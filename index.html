@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Residencias ULEAM - Login</title>
+    <link rel="stylesheet" href="css/estilos.css">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body class="bg-login">
+    <div id="app" class="login-wrapper">
+        <div class="login-card">
+            <h2>Gestión de Residencias ULEAM</h2>
+            <form @submit.prevent="handleLogin">
+                <div class="form-group">
+                    <label>Correo institucional</label>
+                    <input 
+                        type="email" 
+                        v-model="form.usuario" 
+                        placeholder="correo@live.uleam.edu.ec"
+                        :class="{ 'is-invalid': errors.usuario }"
+                        @input="clearError('usuario')"
+                    >
+                    <span class="error">{{ errors.usuario }}</span>
+                </div>
+
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <div class="input-group">
+                        <input 
+                            :type="showPassword ? 'text' : 'password'" 
+                            v-model="form.contrasena" 
+                            placeholder="Mínimo 3 caracteres"
+                            :class="{ 'is-invalid': errors.contrasena }"
+                            @input="clearError('contrasena')"
+                        >
+                        <button type="button" @click="togglePassword" class="btn-eye">
+                            {{ showPassword ? '🙈' : '👁️' }}
+                        </button>
+                    </div>
+                    <span class="error">{{ errors.contrasena }}</span>
+                </div>
+
+                <div class="form-group">
+                    <label>Rol</label>
+                    <select 
+                        v-model="form.rol"
+                        :class="{ 'is-invalid': errors.rol }"
+                        @change="clearError('rol')"
+                    >
+                        <option value="">Seleccione un rol</option>
+                        <option value="estudiante">Estudiante</option>
+                        <option value="admin">Administrador</option>
+                    </select>
+                    <span class="error">{{ errors.rol }}</span>
+                </div>
+
+                <p class="mensaje" :style="{ color: mensajeColor }">{{ mensaje }}</p>
+                <button type="submit" class="btn-primary" :disabled="loading">
+                    {{ loading ? 'Ingresando...' : 'Ingresar' }}
+                </button>
+            </form>
+
+            <!-- Información de credenciales de prueba -->
+            <div style="margin-top: 25px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px; font-size: 13px; border: 1px solid rgba(255,255,255,0.1);">
+                <p style="margin: 0 0 10px 0; font-weight: bold; color: var(--menta);">🔑 Credenciales de Prueba:</p>
+                <details style="cursor: pointer;">
+                    <summary style="color: var(--amarillo); margin-bottom: 8px;">Ver estudiantes disponibles</summary>
+                    <div style="padding-left: 15px; line-height: 1.8;">
+                        <p style="margin: 5px 0;">📧 <strong>Estudiante 1:</strong> juan.perez@live.uleam.edu.ec / 123</p>
+                        <p style="margin: 5px 0;">📧 <strong>Estudiante 2:</strong> maria.garcia@live.uleam.edu.ec / 123</p>
+                        <p style="margin: 5px 0;">📧 <strong>Estudiante 3:</strong> carlos.lopez@live.uleam.edu.ec / 123</p>
+                        <p style="margin: 5px 0;">📧 <strong>Estudiante 4:</strong> ana.martinez@live.uleam.edu.ec / 123</p>
+                    </div>
+                </details>
+                <p style="margin: 8px 0 0 0;">🔧 <strong>Admin:</strong> admin@live.uleam.edu.ec / 123</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    form: {
+                        usuario: '',
+                        contrasena: '',
+                        rol: ''
+                    },
+                    errors: {
+                        usuario: '',
+                        contrasena: '',
+                        rol: ''
+                    },
+                    mensaje: '',
+                    mensajeColor: '',
+                    showPassword: false,
+                    loading: false,
+                    // Base de datos de usuarios
+                    USUARIOS: {
+                        // Administrador
+                        'admin@live.uleam.edu.ec': {
+                            password: '123',
+                            rol: 'admin',
+                            cedula: 'admin001',
+                            nombre: 'Administrador Sistema'
+                        },
+                        // Estudiantes con cédulas ecuatorianas simuladas
+                        'juan.perez@live.uleam.edu.ec': {
+                            password: '123',
+                            rol: 'estudiante',
+                            cedula: '1234567890',
+                            nombre: 'Juan Pérez'
+                        },
+                        'maria.garcia@live.uleam.edu.ec': {
+                            password: '123',
+                            rol: 'estudiante',
+                            cedula: '0987654321',
+                            nombre: 'María García'
+                        },
+                        'carlos.lopez@live.uleam.edu.ec': {
+                            password: '123',
+                            rol: 'estudiante',
+                            cedula: '1122334455',
+                            nombre: 'Carlos López'
+                        },
+                        'ana.martinez@live.uleam.edu.ec': {
+                            password: '123',
+                            rol: 'estudiante',
+                            cedula: '5544332211',
+                            nombre: 'Ana Martínez'
+                        }
+                    }
+                };
+            },
+            mounted() {
+                // Limpiar sesiones previas
+                localStorage.removeItem('sesionRol');
+                localStorage.removeItem('sesionEmail');
+                localStorage.removeItem('sesionCedula');
+                localStorage.removeItem('sesionNombre');
+                
+                console.log('🔐 Sistema de Login ULEAM cargado');
+                console.log('📝 Usuarios disponibles:', Object.keys(this.USUARIOS).length);
+            },
+            methods: {
+                togglePassword() {
+                    this.showPassword = !this.showPassword;
+                },
+                clearError(field) {
+                    this.errors[field] = '';
+                    this.mensaje = '';
+                },
+                validateForm() {
+                    let isValid = true;
+                    
+                    // Validar usuario
+                    const email = this.form.usuario.trim().toLowerCase();
+                    if (!email) {
+                        this.errors.usuario = 'Ingresa tu correo institucional.';
+                        isValid = false;
+                    }
+                    
+                    // Validar contraseña
+                    if (!this.form.contrasena.trim()) {
+                        this.errors.contrasena = 'La contraseña es obligatoria.';
+                        isValid = false;
+                    }
+                    
+                    // Validar rol
+                    if (!this.form.rol) {
+                        this.errors.rol = 'Selecciona un rol de acceso.';
+                        isValid = false;
+                    }
+                    
+                    return isValid;
+                },
+                handleLogin() {
+                    // Limpiar errores previos
+                    this.errors = { usuario: '', contrasena: '', rol: '' };
+                    this.mensaje = '';
+                    
+                    // Validar formulario
+                    if (!this.validateForm()) return;
+                    
+                    const email = this.form.usuario.trim().toLowerCase();
+                    const pass = this.form.contrasena.trim();
+                    const rolSeleccionado = this.form.rol;
+                    
+                    // Buscar usuario en la base de datos
+                    const usuario = this.USUARIOS[email];
+                    
+                    // Validar existencia del usuario
+                    if (!usuario) {
+                        this.mensajeColor = 'var(--amarillo)';
+                        this.mensaje = '❌ Usuario no encontrado en el sistema.';
+                        this.errors.usuario = ' ';
+                        return;
+                    }
+                    
+                    // Validar contraseña
+                    if (usuario.password !== pass) {
+                        this.mensajeColor = 'var(--amarillo)';
+                        this.mensaje = '❌ Contraseña incorrecta.';
+                        this.errors.contrasena = ' ';
+                        return;
+                    }
+                    
+                    // Validar que el rol coincida
+                    if (usuario.rol !== rolSeleccionado) {
+                        this.mensajeColor = 'var(--amarillo)';
+                        this.mensaje = `❌ Este usuario no tiene permisos de ${rolSeleccionado}.`;
+                        this.errors.rol = ' ';
+                        return;
+                    }
+                    
+                    // ✅ LOGIN EXITOSO
+                    this.loading = true;
+                    this.mensajeColor = 'var(--verde-ok)';
+                    this.mensaje = `✅ Bienvenido/a ${usuario.nombre}. Redirigiendo...`;
+                    
+                    // Guardar datos en LocalStorage
+                    localStorage.setItem('sesionRol', usuario.rol);
+                    localStorage.setItem('sesionEmail', email);
+                    localStorage.setItem('sesionCedula', usuario.cedula);
+                    localStorage.setItem('sesionNombre', usuario.nombre);
+                    
+                    console.log('✅ Login exitoso:', {
+                        email: email,
+                        nombre: usuario.nombre,
+                        cedula: usuario.cedula,
+                        rol: usuario.rol
+                    });
+                    
+                    // Redireccionar según el rol
+                    setTimeout(() => {
+                        if (usuario.rol === 'admin') {
+                            window.location.href = 'admin.html';
+                        } else {
+                            window.location.href = 'estudiante.html';
+                        }
+                    }, 1500);
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

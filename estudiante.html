@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estudiante - Solicitud de Residencia</title>
+  <link rel="stylesheet" href="css/estilos.css">
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body class="bg-app">
+  <div id="app">
+    <header class="app-header">
+      <div class="right-header">
+        <h2>{{ nombreUsuario || 'Estudiante' }} <small style="font-size: 14px; opacity: 0.7;">({{ cedulaUsuario }})</small></h2>
+        <button @click="showLogoutModal = true" class="btn-secondary">Cerrar sesión</button>
+      </div>
+    </header>
+
+    <div class="dashboard">
+      <section class="col-left">
+        <div class="card-panel">
+          <h3>Nueva Solicitud</h3>
+          <form @submit.prevent="enviarSolicitud" novalidate>
+            <div class="form-group">
+              <label for="nombre">Nombre completo</label>
+              <input 
+                type="text" 
+                id="nombre"
+                v-model="form.nombre"
+                placeholder="Ej: Juan Pérez"
+                :class="{ 'is-invalid': errors.nombre }"
+                @input="clearError('nombre')"
+              >
+              <small class="error">{{ errors.nombre }}</small>
+            </div>
+
+            <div class="form-group">
+              <label for="cedula">Cédula</label>
+              <input 
+                type="text" 
+                id="cedula"
+                v-model="form.cedula"
+                placeholder="10 dígitos"
+                maxlength="10"
+                :class="{ 'is-invalid': errors.cedula }"
+                @input="clearError('cedula')"
+                :readonly="cedulaUsuario !== '0'"
+              >
+              <small class="error">{{ errors.cedula }}</small>
+              <small style="color: var(--menta); font-size: 12px;" v-if="cedulaUsuario !== '0'">
+                ℹ️ Tu cédula se detectó automáticamente del login
+              </small>
+            </div>
+
+            <div class="form-group">
+              <label for="carrera">Carrera</label>
+              <input 
+                type="text" 
+                id="carrera"
+                v-model="form.carrera"
+                placeholder="Ej: Ingeniería en TICS"
+                :class="{ 'is-invalid': errors.carrera }"
+                @input="clearError('carrera')"
+              >
+              <small class="error">{{ errors.carrera }}</small>
+            </div>
+            
+            <div class="form-group">
+              <label for="motivo">Motivo de solicitud</label>
+              <textarea 
+                id="motivo"
+                v-model="form.motivo"
+                rows="3" 
+                placeholder="Explique brevemente (mín. 10 caracteres)"
+                :class="{ 'is-invalid': errors.motivo }"
+                @input="clearError('motivo')"
+              ></textarea>
+              <small class="error">{{ errors.motivo }}</small>
+            </div>
+            
+            <div class="form-group">
+              <label for="fechaInicio">Fecha de inicio de estancia</label>
+              <input 
+                type="date" 
+                id="fechaInicio"
+                v-model="form.fechaInicio"
+                :class="{ 'is-invalid': errors.fechaInicio }"
+                @change="clearError('fechaInicio')"
+              >
+              <small class="error">{{ errors.fechaInicio }}</small>
+            </div>
+
+            <div class="form-group">
+              <label for="fechaFin">Fecha de fin de estancia</label>
+              <input 
+                type="date" 
+                id="fechaFin"
+                v-model="form.fechaFin"
+                :class="{ 'is-invalid': errors.fechaFin }"
+                @change="clearError('fechaFin')"
+              >
+              <small class="error">{{ errors.fechaFin }}</small>
+            </div>
+
+            <div class="acciones-left">
+              <button type="submit" class="btn-primary">Enviar Solicitud</button>
+              <button type="button" class="btn-secondary" @click="limpiarFormulario">Limpiar</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <aside class="col-right">
+        <div class="card-panel">
+          <h3>Mis Solicitudes</h3>
+          
+          <!-- Si no tiene solicitudes -->
+          <div v-if="misSolicitudes.length === 0" style="text-align: center; padding: 20px; opacity: 0.7;">
+            <p>📋 No tienes solicitudes aún.</p>
+            <p style="font-size: 14px;">¡Envía tu primera solicitud!</p>
+          </div>
+
+          <!-- Lista de solicitudes del estudiante -->
+          <div v-else>
+            <div 
+              v-for="(solicitud, index) in misSolicitudes" 
+              :key="solicitud.id"
+              style="margin-bottom: 15px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px; border: 1px solid var(--border);"
+            >
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <strong style="color: var(--menta);">Solicitud #{{ misSolicitudes.length - index }}</strong>
+                <span :class="['etiqueta-estado', solicitud.estado.toLowerCase()]">
+                  {{ solicitud.estado }}
+                </span>
+              </div>
+              
+              <p style="margin: 5px 0; font-size: 14px;">
+                <strong>Carrera:</strong> {{ solicitud.carrera }}
+              </p>
+              <p style="margin: 5px 0; font-size: 14px;">
+                <strong>Fecha solicitud:</strong> {{ formatearFecha(solicitud.fecha) }}
+              </p>
+              <p style="margin: 5px 0; font-size: 14px;">
+                <strong>Estancia:</strong> {{ solicitud.fechaInicio }} al {{ solicitud.fechaFin }}
+              </p>
+              <p style="margin: 5px 0; font-size: 13px; opacity: 0.8;">
+                <strong>Motivo:</strong> {{ solicitud.motivo.substring(0, 60) }}{{ solicitud.motivo.length > 60 ? '...' : '' }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Modal Logout -->
+    <div :class="['modal', { active: showLogoutModal }]">
+      <div class="modal-content">
+        <h3>¿Deseas cerrar sesión?</h3>
+        <div class="acciones-center">
+          <button @click="showLogoutModal = false" class="btn-secondary">Cancelar</button>
+          <button @click="cerrarSesion" class="btn-primary">Cerrar Sesión</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const { createApp } = Vue;
+
+    createApp({
+      data() {
+        return {
+          form: {
+            nombre: '',
+            cedula: '',
+            carrera: '',
+            motivo: '',
+            fechaInicio: '',
+            fechaFin: ''
+          },
+          errors: {
+            nombre: '',
+            cedula: '',
+            carrera: '',
+            motivo: '',
+            fechaInicio: '',
+            fechaFin: ''
+          },
+          showLogoutModal: false,
+          cedulaUsuario: '',
+          emailUsuario: '',
+          nombreUsuario: ''
+        };
+      },
+      computed: {
+        // IMPORTANTE: Filtra solo las solicitudes de ESTE estudiante
+        misSolicitudes() {
+          const todasLasSolicitudes = this.getSolicitudes();
+          
+          // Filtra por la cédula del estudiante actual
+          const solicitudesDelEstudiante = todasLasSolicitudes.filter(
+            s => s.cedula === this.cedulaUsuario
+          );
+          
+          // Ordena de más reciente a más antigua
+          return solicitudesDelEstudiante.sort((a, b) => b.fecha - a.fecha);
+        }
+      },
+      mounted() {
+        // Verificar que el usuario esté autenticado
+        const rol = localStorage.getItem('sesionRol');
+        if (rol !== 'estudiante') {
+          alert('⚠️ Acceso denegado. Debes iniciar sesión como estudiante.');
+          window.location.href = 'index.html';
+          return;
+        }
+
+        // Obtener datos del usuario logueado
+        this.emailUsuario = localStorage.getItem('sesionEmail') || '';
+        this.cedulaUsuario = localStorage.getItem('sesionCedula') || '0';
+        this.nombreUsuario = localStorage.getItem('sesionNombre') || 'Estudiante';
+        
+        // Pre-llenar la cédula si está disponible
+        if (this.cedulaUsuario && this.cedulaUsuario !== '0') {
+          this.form.cedula = this.cedulaUsuario;
+        }
+
+        console.log('👤 Usuario logueado:', this.nombreUsuario);
+        console.log('🆔 Cédula del usuario:', this.cedulaUsuario);
+        console.log('📋 Mis solicitudes:', this.misSolicitudes.length);
+      },
+      methods: {
+        getSolicitudes() {
+          try {
+            return JSON.parse(localStorage.getItem('solicitudesResidencia')) || [];
+          } catch {
+            return [];
+          }
+        },
+        setSolicitudes(datos) {
+          localStorage.setItem('solicitudesResidencia', JSON.stringify(datos));
+        },
+        clearError(campo) {
+          this.errors[campo] = '';
+        },
+        validarFormulario() {
+          let esValido = true;
+          
+          if (!this.form.nombre.trim()) {
+            this.errors.nombre = 'El nombre es obligatorio.';
+            esValido = false;
+          } else if (this.form.nombre.trim().length < 3) {
+            this.errors.nombre = 'Mínimo 3 caracteres.';
+            esValido = false;
+          }
+          
+          const cedula = this.form.cedula.trim();
+          if (!cedula) {
+            this.errors.cedula = 'La cédula es obligatoria.';
+            esValido = false;
+          } else if (!/^\d{10}$/.test(cedula)) {
+            this.errors.cedula = 'Debe tener 10 dígitos.';
+            esValido = false;
+          }
+          
+          if (!this.form.carrera.trim()) {
+            this.errors.carrera = 'La carrera es obligatoria.';
+            esValido = false;
+          }
+          
+          if (!this.form.motivo.trim()) {
+            this.errors.motivo = 'El motivo es obligatorio.';
+            esValido = false;
+          } else if (this.form.motivo.trim().length < 10) {
+            this.errors.motivo = 'Mínimo 10 caracteres.';
+            esValido = false;
+          }
+          
+          if (!this.form.fechaInicio) {
+            this.errors.fechaInicio = 'La fecha de inicio es obligatoria.';
+            esValido = false;
+          }
+          
+          if (!this.form.fechaFin) {
+            this.errors.fechaFin = 'La fecha de fin es obligatoria.';
+            esValido = false;
+          } else if (this.form.fechaInicio && this.form.fechaFin) {
+            // Validar que la fecha de fin sea posterior a la de inicio
+            if (new Date(this.form.fechaFin) <= new Date(this.form.fechaInicio)) {
+              this.errors.fechaFin = 'Debe ser posterior a la fecha de inicio.';
+              esValido = false;
+            }
+          }
+          
+          return esValido;
+        },
+        enviarSolicitud() {
+          // Limpiar errores
+          this.errors = {
+            nombre: '',
+            cedula: '',
+            carrera: '',
+            motivo: '',
+            fechaInicio: '',
+            fechaFin: ''
+          };
+          
+          if (!this.validarFormulario()) return;
+          
+          const solicitudes = this.getSolicitudes();
+          const nuevaSolicitud = {
+            id: Date.now(),
+            nombre: this.form.nombre.trim(),
+            cedula: this.form.cedula.trim(),
+            carrera: this.form.carrera.trim(),
+            motivo: this.form.motivo.trim(),
+            fechaInicio: this.form.fechaInicio,
+            fechaFin: this.form.fechaFin,
+            estado: 'Pendiente',
+            fecha: Date.now()
+          };
+          
+          solicitudes.push(nuevaSolicitud);
+          this.setSolicitudes(solicitudes);
+          
+          alert('✅ Solicitud enviada con éxito. Puedes ver su estado en el panel derecho.');
+          this.limpiarFormulario();
+        },
+        limpiarFormulario() {
+          this.form = {
+            nombre: '',
+            cedula: this.cedulaUsuario || '', // Mantiene la cédula pre-llenada
+            carrera: '',
+            motivo: '',
+            fechaInicio: '',
+            fechaFin: ''
+          };
+          this.errors = {
+            nombre: '',
+            cedula: '',
+            carrera: '',
+            motivo: '',
+            fechaInicio: '',
+            fechaFin: ''
+          };
+        },
+        formatearFecha(timestamp) {
+          return new Date(timestamp).toLocaleDateString('es-EC', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+        },
+        cerrarSesion() {
+          localStorage.removeItem('sesionRol');
+          localStorage.removeItem('sesionEmail');
+          localStorage.removeItem('sesionCedula');
+          window.location.href = 'index.html';
+        }
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>

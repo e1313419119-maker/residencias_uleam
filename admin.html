@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Residencias ULEAM</title>
+    <link rel="stylesheet" href="css/estilos.css">
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+</head>
+<body class="bg-app">
+
+ <header class="header-admin">
+        <h2>Panel Administrativo</h2>
+        <button id="btnLogout" class="btn-logout">Cerrar Sesión</button>
+    </header>
+    
+    <div class="panel-resumen">
+        <div class="card-resumen total"><h4>Total</h4><p id="totalCount">0</p></div>
+        <div class="card-resumen pendiente"><h4>Pendientes</h4><p id="pendCount">0</p></div>
+        <div class="card-resumen aprobada"><h4>Aprobadas</h4><p id="aprobCount">0</p></div>
+        <div class="card-resumen rechazada"><h4>Rechazadas</h4><p id="rechCount">0</p></div>
+    </div>
+
+    <div class="dashboard">
+        <section class="col-left">
+            <div class="card-panel">
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="solicitudes">📋 Solicitudes</button>
+                    <button class="tab-btn" data-tab="reportes">📊 Reportes y Sistema</button>
+                </div>
+
+                <div class="tab-content active" id="solicitudes">
+                    <div id="listaSolicitudes" class="lista-solicitudes"></div>
+                </div>
+
+                <div class="tab-content" id="reportes">
+                    <h3>📄 Generar Reportes PDF</h3>
+                    <div class="acciones-left" style="margin-bottom: 25px;">
+                        <button id="btnReporteGeneral" class="btn-primary">PDF - Lista Completa</button>
+                        <button id="btnReporteAprobados" class="btn-secondary">PDF - Solo Aprobados</button>
+                    </div>
+
+                    <hr style="opacity: 0.1; margin: 20px 0;">
+
+                    <h3>💾 Respaldo y Recuperación</h3>
+                    <div class="acciones-left" style="margin-bottom: 25px;">
+                        <button id="btnExportJson" class="btn-primary">Descargar JSON</button>
+                        <button id="btnExportXml" class="btn-secondary">Exportar XML</button>
+                        
+                        <label for="inputImportar" class="btn-import">📥 Importar Backup</label>
+                        <input type="file" id="inputImportar" accept=".json" style="display: none;">
+                    </div>
+
+                    <hr style="opacity: 0.1; margin: 20px 0;">
+
+                    <h3>🛠️ Diagnóstico del Sistema</h3>
+                    <div id="infoSoporte">
+                        <p style="text-align: center; opacity: 0.6;">Análisis de base de datos no iniciado.</p>
+                    </div>
+                    <div class="acciones-left">
+                        <button id="btnAnalizarStorage" class="btn-primary">Registrar Estado</button>
+                        <button id="btnLimpiarTodo" class="btn-secondary" style="background:#e74c3c">Vaciar Todo</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <aside class="col-right">
+            <div class="card-panel">
+                <h3>Aprobados</h3>
+                <input id="buscadorAprobados" type="text" placeholder="Buscar nombre o cédula..." style="margin-bottom:15px;">
+                <div id="listaAprobados" class="list-mini"></div>
+            </div>
+        </aside>
+    </div>
+
+    <div id="modalLogout" class="modal">
+        <div class="modal-content">
+            <h3>¿Cerrar sesión?</h3>
+            <div class="modal-actions">
+                <button id="confirmLogout" class="btn-secondary">Sí, salir</button>
+                <button id="cancelLogout" class="btn-primary">No, volver</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/admin.js"></script>
+</body>
+</html>
